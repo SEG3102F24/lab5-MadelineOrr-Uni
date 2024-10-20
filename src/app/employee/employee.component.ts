@@ -1,8 +1,9 @@
-import {Component, inject} from '@angular/core';
+import { Component, inject, EventEmitter, Output } from '@angular/core';
 import { AbstractControl, FormBuilder, Validators, ReactiveFormsModule } from "@angular/forms";
-import {EmployeeService} from "../service/employee.service";
+import { EmployeeService } from "../service/employee.service";
+import { EmployeeDbService } from './firesotre/employee-db.service';
 import { Router, RouterLink } from "@angular/router";
-import {Employee} from "../model/employee";
+import { Employee } from "../model/employee";
 
 @Component({
     selector: 'app-employee',
@@ -12,8 +13,10 @@ import {Employee} from "../model/employee";
     imports: [RouterLink, ReactiveFormsModule]
 })
 export class EmployeeComponent {
+  @Output() fireSave: EventEmitter<Employee> = new EventEmitter();
   private builder: FormBuilder = inject(FormBuilder);
   private employeeService: EmployeeService = inject(EmployeeService);
+  private employeeDbService: EmployeeDbService = inject(EmployeeDbService);
   private router: Router = inject(Router);
   employeeForm = this.builder.group({
     name: ['', Validators.required],
@@ -24,6 +27,8 @@ export class EmployeeComponent {
     email: ['', Validators.email]
   });
 
+
+
   get name(): AbstractControl<string> {return <AbstractControl<string>>this.employeeForm.get('name'); }
   get dateOfBirth(): AbstractControl<string> {return <AbstractControl<string>>this.employeeForm.get('dateOfBirth'); }
   get city(): AbstractControl<string> {return <AbstractControl>this.employeeForm.get('city'); }
@@ -32,13 +37,17 @@ export class EmployeeComponent {
   get email(): AbstractControl<string> {return <AbstractControl<string>>this.employeeForm.get('email'); }
 
   onSubmit() {
-    const employee: Employee = new Employee(this.name.value,
+    const employee: Employee = new Employee(
+      this.name.value,
       new Date(this.dateOfBirth.value),
       this.city.value,
       this.salary.value,
       this.gender.value,
-      this.email.value);
-    this.employeeService.addEmployee(employee);
+      this.email.value
+    );
+    this.employeeDbService.createEmployee(employee);
+    this.fireSave.emit(employee);
+
     this.employeeForm.reset();
     this.router.navigate(['/employees']).then(() => {});
   }
